@@ -1,0 +1,62 @@
+user  nobody;
+worker_processes  4;
+worker_rlimit_nofile 10000;
+error_log  logs/error.log;
+pid        logs/nginx.pid;
+
+events {
+    worker_connections  4096;
+    use epoll;
+    }
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    #log_format  nonakamai  '$remote_addr [$time_local] $http_host $request_time "$request" $status $body_bytes_sent';
+    log_format  nonakamai  '$remote_addr [$time_local] $http_host $request_time "$request" $status $body_bytes_sent $upstream_cache_status  $http_x_transaction_id $pid$request_length$connection$connection_requests "$http_referer" "$http_user_agent" $upstream_addr "$scheme" "$http_x_requested_with"';
+#    log_format  akamai     '$remote_addr [$time_local] $http_host $request_time "$request" $status $body_bytes_sent $http_true_client_ip';
+    log_format  akamai     '$remote_addr [$time_local] $http_host $request_time "$request" $status $body_bytes_sent $upstream_cache_status  $http_x_transaction_id $pid$request_length$connection$connection_requests $http_infoedge_customer_ip "$http_referer" "$http_user_agent" $upstream_addr "$scheme" "$http_x_requested_with"';
+    access_log off;
+
+        server_tokens off;
+        sendfile        on;
+        tcp_nodelay     on;
+        server_names_hash_bucket_size 128;
+        keepalive_timeout 305;
+        client_header_timeout 301;
+        client_body_timeout 301;
+        ignore_invalid_headers on;
+        send_timeout 120;
+
+client_header_buffer_size 4k;
+client_max_body_size 8m;
+large_client_header_buffers 4 16k;
+
+        proxy_read_timeout 300;
+        proxy_buffer_size          64k;
+        proxy_buffers              32 64K;
+        proxy_busy_buffers_size    64k;
+        proxy_temp_file_write_size 64k;
+
+gzip on;
+gzip_http_version 1.0;
+gzip_comp_level 5;
+gzip_proxied any;
+gzip_min_length  1100;
+gzip_buffers 32 8k;
+#gzip_types text/plain text/html text/css application/x-javascript text/xml application/xml application/xml+rss text/javascript image/gif image/jpeg image/png application/javascript application/pdf;
+gzip_types *;
+    # Some version of IE 6 don't handle compression well on some mime-types,
+    # so just disable for them
+gzip_disable "MSIE [1-6].(?!.*SV1)";
+    # Set a vary header so downstream proxies don't send cached gzipped
+    # content to IE6
+    gzip_vary on;
+
+ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+
+resolver 127.0.0.1;
+include hostname.conf;
+}
